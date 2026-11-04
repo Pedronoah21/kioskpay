@@ -51,6 +51,15 @@ Crie o primeiro administrador (usa `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` do
 npm run prisma:seed
 ```
 
+## Produção
+
+- **API:** https://kioskpay-api.onrender.com (Render, região Virgínia). Deploy automático a cada push na `main`.
+- **Banco:** PostgreSQL no Neon (projeto `kioskpay`, N. Virgínia).
+- Na inicialização a API aplica as migrações e cria o admin de `SEED_ADMIN_EMAIL` se ele ainda não existir.
+- Variáveis de ambiente ficam no painel do Render (nunca no repositório).
+
+> O plano gratuito do Render "dorme" após ~15 min sem uso e leva cerca de 1 minuto para acordar. Para uso real (e para o webhook do PicPay não esperar), use o plano Starter.
+
 ## App dos pais (`apps/mobile`)
 
 Expo SDK 58 com Expo Router. O mesmo código roda no Android, no iPhone e no navegador (portal web dos pais).

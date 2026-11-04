@@ -29,7 +29,7 @@
     ],
     "scheme": "kioskpay",
     "extra": {
-      "apiUrl": "http://localhost:3000"
+      "apiUrl": "https://kioskpay-api.onrender.com"
     }
   }
 }
