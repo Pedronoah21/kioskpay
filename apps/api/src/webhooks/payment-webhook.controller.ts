@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { Public } from '../auth/auth.decorators';
 import { PAYMENT_GATEWAY, PaymentGateway } from '../payments/payment-gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import { RechargesService } from '../recharges/recharges.service';
@@ -28,6 +29,7 @@ export class PaymentWebhookController {
     @Inject(PAYMENT_GATEWAY) private readonly gateway: PaymentGateway,
   ) {}
 
+  @Public() // autenticado pelo token do gateway, não por JWT
   @Post('payments')
   @HttpCode(200)
   async handle(@Headers() headers: Record<string, string>, @Body() body: unknown) {

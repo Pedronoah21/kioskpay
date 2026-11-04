@@ -45,27 +45,48 @@ npm run start:dev
 npm test
 ```
 
+Crie o primeiro administrador (usa `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` do `.env`):
+
+```bash
+npm run prisma:seed
+```
+
+## Login e perfis
+
+Toda rota exige `Authorization: Bearer <token>`, exceto cadastro, login e webhook.
+
+| Perfil | Como é criado | Pode |
+| --- | --- | --- |
+| ADMIN | `npm run prisma:seed` ou outro admin | tudo, incluindo estornos, auditoria e vincular pais a alunos |
+| OPERATOR | admin em `POST /auth/staff` | identificar aluno, vender, lançar recarga no balcão |
+| GUARDIAN | o próprio responsável em `POST /auth/register` (CPF validado) | ver só os próprios filhos, gerar Pix, ver extrato |
+
+Fluxo do responsável: cadastra-se no app → a escola vincula pelo e-mail (`POST /students/:id/guardians`) → os filhos aparecem em `GET /auth/me`.
+
 ## Endpoints atuais
 
-| Método | Rota | Uso |
-| --- | --- | --- |
-| POST | `/recharges/pix` | Responsável gera Pix `{ studentId, amountCents }` |
-| POST | `/recharges/manual` | Recarga no balcão `{ studentId, amountCents, method: CASH\|POS }` |
-| GET | `/recharges/mine` | Recargas do responsável |
-| POST | `/webhooks/payments` | Notificação do gateway |
-| GET | `/sales/identify/:code` | PDV lê QR/NFC e recebe nome, foto e saldo |
-| POST | `/sales` | Venda `{ studentId, items: [{ productId, quantity }], offlineUuid? }` |
-| POST | `/sales/:id/refund` | Estorno de venda `{ reason }` |
-| GET | `/students/:id/wallet` | Saldo |
-| GET | `/students/:id/wallet/statement` | Extrato |
-| GET | `/students/:id/wallet/audit` | Confere saldo × lançamentos |
-
-> **Ainda sem autenticação:** os controllers usam o header provisório `x-user-id`. O próximo passo é login com JWT e permissões por perfil (admin, operador, responsável).
+| Método | Rota | Perfil | Uso |
+| --- | --- | --- | --- |
+| POST | `/auth/register` | público | Cadastro do responsável `{ name, email, password, document, phone? }` |
+| POST | `/auth/login` | público | `{ email, password }` → `{ accessToken, user }` |
+| GET | `/auth/me` | todos | Dados do usuário e, para responsável, os filhos com saldo |
+| POST | `/auth/staff` | ADMIN | Cria operador ou admin |
+| POST | `/students/:id/guardians` | ADMIN | Vincula responsável `{ email }` |
+| POST | `/recharges/pix` | GUARDIAN | Gera Pix `{ studentId, amountCents }` |
+| POST | `/recharges/manual` | ADMIN, OPERATOR | Recarga no balcão `{ studentId, amountCents, method: CASH\|POS }` |
+| GET | `/recharges/mine` | GUARDIAN | Recargas do responsável |
+| POST | `/webhooks/payments` | gateway | Notificação de pagamento |
+| GET | `/sales/identify/:code` | ADMIN, OPERATOR | Lê QR/NFC e devolve nome, foto e saldo |
+| POST | `/sales` | ADMIN, OPERATOR | Venda `{ studentId, items: [{ productId, quantity }], offlineUuid? }` |
+| POST | `/sales/:id/refund` | ADMIN | Estorno de venda `{ reason }` |
+| GET | `/students/:id/wallet` | dono ou equipe | Saldo |
+| GET | `/students/:id/wallet/statement` | dono ou equipe | Extrato |
+| GET | `/students/:id/wallet/audit` | ADMIN | Confere saldo × lançamentos |
 
 ## Próximos passos
 
-1. Autenticação JWT + permissões por perfil
-2. CRUD de alunos, turmas, produtos e restrições (com importação de planilha)
+1. CRUD de alunos, turmas, produtos e restrições (com importação de planilha)
+2. Limite diário e bloqueios definidos pelo responsável no app
 3. App dos pais (Expo): login, filhos, recarga Pix, extrato, bloqueios
 4. PDV web com leitura de QR e modo offline
 5. Notificações de compra e saldo baixo

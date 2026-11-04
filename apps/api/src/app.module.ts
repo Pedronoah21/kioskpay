@@ -1,5 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
+import { AccessService } from './auth/access.service';
+import { AuthController } from './auth/auth.controller';
+import { AuthGuard } from './auth/auth.guard';
+import { AuthService } from './auth/auth.service';
 import { PAYMENT_GATEWAY } from './payments/payment-gateway';
 import { PicPayGateway } from './payments/picpay/picpay.gateway';
 import { PrismaModule } from './prisma/prisma.service';
@@ -7,14 +13,37 @@ import { RechargesController } from './recharges/recharges.controller';
 import { RechargesService } from './recharges/recharges.service';
 import { SalesController } from './sales/sales.controller';
 import { SalesService } from './sales/sales.service';
+import { StudentsController } from './students/students.controller';
 import { WalletController } from './wallet/wallet.controller';
 import { WalletService } from './wallet/wallet.service';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule],
-  controllers: [WalletController, RechargesController, SalesController, PaymentWebhookController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    JwtModule.registerAsync({
+      global: true,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('JWT_SECRET'),
+        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN') ?? '7d' },
+      }),
+    }),
+  ],
+  controllers: [
+    AuthController,
+    StudentsController,
+    WalletController,
+    RechargesController,
+    SalesController,
+    PaymentWebhookController,
+  ],
   providers: [
+    // Toda rota exige login, salvo as marcadas com @Public()
+    { provide: APP_GUARD, useClass: AuthGuard },
+    AuthService,
+    AccessService,
     WalletService,
     RechargesService,
     SalesService,

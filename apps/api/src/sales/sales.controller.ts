@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Headers, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { ArrayMinSize, IsInt, IsOptional, IsString, IsUUID, Min, MinLength, ValidateNested } from 'class-validator';
+import { CurrentUser, Roles, type AuthUser } from '../auth/auth.decorators';
 import { SalesService } from './sales.service';
 
 class SaleItemDto {
@@ -36,23 +37,25 @@ class RefundSaleDto {
   reason: string;
 }
 
-/** TODO(auth): operador/admin vindos do JWT; refund só para ADMIN. */
 @Controller('sales')
 export class SalesController {
   constructor(private readonly sales: SalesService) {}
 
+  @Roles('ADMIN', 'OPERATOR')
   @Get('identify/:code')
   identify(@Param('code') code: string) {
     return this.sales.identify(code);
   }
 
+  @Roles('ADMIN', 'OPERATOR')
   @Post()
-  create(@Headers('x-user-id') operatorId: string, @Body() dto: CreateSaleDto) {
-    return this.sales.create({ ...dto, operatorId });
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateSaleDto) {
+    return this.sales.create({ ...dto, operatorId: user.id });
   }
 
+  @Roles('ADMIN')
   @Post(':id/refund')
-  refund(@Headers('x-user-id') adminId: string, @Param('id') id: string, @Body() dto: RefundSaleDto) {
-    return this.sales.refund(id, adminId, dto.reason);
+  refund(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: RefundSaleDto) {
+    return this.sales.refund(id, user.id, dto.reason);
   }
 }

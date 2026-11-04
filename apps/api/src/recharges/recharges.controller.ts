@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Headers, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsString, IsUUID, Min } from 'class-validator';
 import type { Request } from 'express';
+import { CurrentUser, Roles, type AuthUser } from '../auth/auth.decorators';
 import { RechargesService } from './recharges.service';
 
 class CreatePixRechargeDto {
@@ -20,26 +21,27 @@ class CreateManualRechargeDto extends CreatePixRechargeDto {
   method: 'CASH' | 'POS';
 }
 
-/**
- * TODO(auth): trocar o header x-user-id pelo usuário do JWT
- * e restringir createManual a ADMIN/OPERATOR.
- */
 @Controller('recharges')
 export class RechargesController {
   constructor(private readonly recharges: RechargesService) {}
 
+  /** Responsável gera um Pix para um filho (o vínculo é conferido no service). */
+  @Roles('GUARDIAN')
   @Post('pix')
-  createPix(@Headers('x-user-id') guardianId: string, @Body() dto: CreatePixRechargeDto, @Req() req: Request) {
-    return this.recharges.createPix(guardianId, dto.studentId, dto.amountCents, req.ip);
+  createPix(@CurrentUser() user: AuthUser, @Body() dto: CreatePixRechargeDto, @Req() req: Request) {
+    return this.recharges.createPix(user.id, dto.studentId, dto.amountCents, req.ip);
   }
 
+  /** Recarga em dinheiro ou maquininha no balcão. */
+  @Roles('ADMIN', 'OPERATOR')
   @Post('manual')
-  createManual(@Headers('x-user-id') authorId: string, @Body() dto: CreateManualRechargeDto) {
-    return this.recharges.createManual(authorId, dto.studentId, dto.amountCents, dto.method);
+  createManual(@CurrentUser() user: AuthUser, @Body() dto: CreateManualRechargeDto) {
+    return this.recharges.createManual(user.id, dto.studentId, dto.amountCents, dto.method);
   }
 
+  @Roles('GUARDIAN')
   @Get('mine')
-  mine(@Headers('x-user-id') guardianId: string) {
-    return this.recharges.listForGuardian(guardianId);
+  mine(@CurrentUser() user: AuthUser) {
+    return this.recharges.listForGuardian(user.id);
   }
 }
