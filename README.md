@@ -7,8 +7,8 @@ Cantina escolar pré-paga para uma escola: os responsáveis recarregam saldo por
 ```
 apps/
   api/        API em NestJS + Prisma + PostgreSQL  (pronta: carteira, recargas, vendas, webhook)
-  mobile/     (próximo) app dos pais em React Native/Expo
-  web/        (próximo) PDV da cantina e painel admin em Next.js
+  mobile/     App dos pais em Expo (Android, iPhone e navegador)
+  web/        (próximo) PDV da cantina e painel admin
 ```
 
 ## Regras centrais
@@ -50,6 +50,25 @@ Crie o primeiro administrador (usa `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` do
 ```bash
 npm run prisma:seed
 ```
+
+## App dos pais (`apps/mobile`)
+
+Expo SDK 58 com Expo Router. O mesmo código roda no Android, no iPhone e no navegador (portal web dos pais).
+
+Telas: login, cadastro (com máscara de CPF), lista de filhos com saldo, extrato, recarga por Pix (QR code, copia e cola e confirmação automática quando o pagamento cai) e limite diário/bloqueios.
+
+```bash
+cd apps/mobile
+npm install
+cp .env.example .env        # EXPO_PUBLIC_API_URL = endereço da API
+npx expo start              # abra no Expo Go pelo QR code, ou tecle "w" para o navegador
+```
+
+Para testar no celular com a API rodando no computador, use o IP do computador na rede (ex.: `http://192.168.0.10:3000`), não `localhost`.
+
+Checagens: `npx tsc --noEmit` e `npx eslint .`
+
+Publicação nas lojas: `npx eas-cli@latest build` (gera os instaladores na nuvem) e `npx eas-cli@latest submit`.
 
 ## Login e perfis
 
@@ -117,7 +136,7 @@ Bruno Lima;1003;6º B;6º ano;Tarde;
 
 ## Próximos passos
 
-1. App dos pais (Expo): login, filhos, recarga Pix, extrato, limite e bloqueios
+1. Publicar a API com HTTPS e testar o Pix no sandbox do PicPay
 2. PDV web com leitura de QR e modo offline
 3. Painel admin web (cadastros, importação, relatórios)
 4. Notificações de compra e saldo baixo
