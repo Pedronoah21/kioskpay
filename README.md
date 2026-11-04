@@ -71,7 +71,24 @@ Fluxo do responsável: cadastra-se no app → a escola vincula pelo e-mail (`POS
 | POST | `/auth/login` | público | `{ email, password }` → `{ accessToken, user }` |
 | GET | `/auth/me` | todos | Dados do usuário e, para responsável, os filhos com saldo |
 | POST | `/auth/staff` | ADMIN | Cria operador ou admin |
+| GET | `/students?search=&classroomId=&active=` | ADMIN, OPERATOR | Lista alunos com saldo |
+| GET | `/students/:id` | ADMIN, OPERATOR | Detalhe com responsáveis |
+| POST | `/students` | ADMIN | Cria aluno (QR da carteirinha e carteira gerados automaticamente) |
+| PATCH | `/students/:id` | ADMIN | Edita aluno |
+| DELETE | `/students/:id` | ADMIN | Desativa (o histórico financeiro continua) |
+| POST | `/students/:id/regenerate-code` | ADMIN | Carteirinha perdida: novo QR, o antigo para de funcionar |
+| POST | `/students/import` | ADMIN | Importa CSV `{ csv }` (ver abaixo) |
 | POST | `/students/:id/guardians` | ADMIN | Vincula responsável `{ email }` |
+| DELETE | `/students/:id/guardians/:guardianId` | ADMIN | Desvincula responsável |
+| GET | `/students/:id/controls` | GUARDIAN (do filho), ADMIN | Limite diário e bloqueios |
+| PUT | `/students/:id/controls/daily-limit` | GUARDIAN, ADMIN | `{ dailyLimitCents }` (`null` remove) |
+| POST | `/students/:id/controls/restrictions` | GUARDIAN, ADMIN | Bloqueia `{ productId }` ou `{ categoryId }` |
+| DELETE | `/students/:id/controls/restrictions/:rid` | GUARDIAN, ADMIN | Desbloqueia |
+| GET/POST/PATCH | `/classrooms` | ADMIN (leitura: OPERATOR) | Turmas |
+| GET/POST | `/categories` | leitura: todos; criar: ADMIN | Categorias |
+| GET | `/products?lowStock=true` | todos | Cardápio (e estoque baixo) |
+| POST/PATCH/DELETE | `/products` | ADMIN | Produtos (delete desativa) |
+| POST | `/products/:id/stock` | ADMIN, OPERATOR | Entrada ou baixa `{ delta }` |
 | POST | `/recharges/pix` | GUARDIAN | Gera Pix `{ studentId, amountCents }` |
 | POST | `/recharges/manual` | ADMIN, OPERATOR | Recarga no balcão `{ studentId, amountCents, method: CASH\|POS }` |
 | GET | `/recharges/mine` | GUARDIAN | Recargas do responsável |
@@ -83,10 +100,25 @@ Fluxo do responsável: cadastra-se no app → a escola vincula pelo e-mail (`POS
 | GET | `/students/:id/wallet/statement` | dono ou equipe | Extrato |
 | GET | `/students/:id/wallet/audit` | ADMIN | Confere saldo × lançamentos |
 
+## Importação de alunos (CSV)
+
+Salve a planilha como CSV no Excel (separador `;` ou `,`). Cabeçalho, com ou sem acento:
+
+```
+Nome;Matrícula;Turma;Série;Turno;Limite diário
+Ana Souza;1001;5º A;5º ano;Manhã;15,00
+Bruno Lima;1003;6º B;6º ano;Tarde;
+```
+
+- `Nome` e `Matrícula` são obrigatórios; o resto é opcional.
+- Matrícula já existente **atualiza** o aluno em vez de duplicar.
+- Turmas que não existem são criadas.
+- Linhas com problema são puladas e voltam listadas com o número da linha.
+
 ## Próximos passos
 
-1. CRUD de alunos, turmas, produtos e restrições (com importação de planilha)
-2. Limite diário e bloqueios definidos pelo responsável no app
-3. App dos pais (Expo): login, filhos, recarga Pix, extrato, bloqueios
-4. PDV web com leitura de QR e modo offline
-5. Notificações de compra e saldo baixo
+1. App dos pais (Expo): login, filhos, recarga Pix, extrato, limite e bloqueios
+2. PDV web com leitura de QR e modo offline
+3. Painel admin web (cadastros, importação, relatórios)
+4. Notificações de compra e saldo baixo
+5. Relatórios: vendas por dia/produto, recargas, saldo total em aberto

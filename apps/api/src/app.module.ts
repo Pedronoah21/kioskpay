@@ -13,7 +13,10 @@ import { RechargesController } from './recharges/recharges.controller';
 import { RechargesService } from './recharges/recharges.service';
 import { SalesController } from './sales/sales.controller';
 import { SalesService } from './sales/sales.service';
+import { CatalogController } from './catalog/catalog.controller';
+import { ControlsController } from './students/controls.controller';
 import { StudentsController } from './students/students.controller';
+import { StudentsService } from './students/students.service';
 import { WalletController } from './wallet/wallet.controller';
 import { WalletService } from './wallet/wallet.service';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
@@ -34,6 +37,8 @@ import { PaymentWebhookController } from './webhooks/payment-webhook.controller'
   controllers: [
     AuthController,
     StudentsController,
+    ControlsController,
+    CatalogController,
     WalletController,
     RechargesController,
     SalesController,
@@ -44,6 +49,7 @@ import { PaymentWebhookController } from './webhooks/payment-webhook.controller'
     { provide: APP_GUARD, useClass: AuthGuard },
     AuthService,
     AccessService,
+    StudentsService,
     WalletService,
     RechargesService,
     SalesService,
