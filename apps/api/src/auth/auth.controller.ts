@@ -32,6 +32,15 @@ class RegisterDto {
   phone?: string;
 }
 
+class ChangePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(8, { message: 'A nova senha precisa ter pelo menos 8 caracteres' })
+  newPassword: string;
+}
+
 class CreateStaffDto {
   @IsString()
   @MinLength(3)
@@ -68,6 +77,12 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.auth.me(user.id);
+  }
+
+  @Post('change-password')
+  @HttpCode(200)
+  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
+    return this.auth.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }
 
   @Roles('ADMIN')

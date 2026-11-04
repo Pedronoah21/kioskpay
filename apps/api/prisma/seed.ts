@@ -12,7 +12,8 @@ async function main() {
   const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD;
   if (!email || !password || password.length < 8) {
-    throw new Error('Defina SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD (mínimo 8 caracteres) no .env');
+    console.log('Seed ignorado: defina SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD (mínimo 8 caracteres).');
+    return;
   }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {

@@ -92,6 +92,15 @@ export class AuthService {
     return this.issue(user);
   }
 
+  async changePassword(userId: string, current: string, next: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!(await bcrypt.compare(current, user.passwordHash))) {
+      throw new UnauthorizedException('Senha atual incorreta');
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(next, 10) } });
+    return { ok: true };
+  }
+
   async me(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
