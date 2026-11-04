@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AccessService } from './auth/access.service';
 import { AuthController } from './auth/auth.controller';
+import { HealthController } from './health.controller';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
 import { PAYMENT_GATEWAY } from './payments/payment-gateway';
@@ -35,6 +36,7 @@ import { PaymentWebhookController } from './webhooks/payment-webhook.controller'
     }),
   ],
   controllers: [
+    HealthController,
     AuthController,
     StudentsController,
     ControlsController,
