@@ -1,0 +1,14 @@
+{
+  "name": "kioskpay",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cantina escolar pré-paga: pais recarregam saldo, aluno consome na cantina.",
+  "workspaces": [
+    "apps/api"
+  ],
+  "scripts": {
+    "api:dev": "npm run start:dev -w apps/api",
+    "api:build": "npm run build -w apps/api",
+    "api:test": "npm run test -w apps/api"
+  }
+}

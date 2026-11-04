@@ -1,0 +1,233 @@
+// KioskPay — modelo de dados
+// Regra central: o saldo é a soma dos lançamentos (LedgerEntry).
+// Wallet.balanceCents é um cache atualizado na mesma transação do lançamento.
+// Todos os valores em centavos (Int).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+  GUARDIAN
+  STUDENT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  document     String?  @unique // CPF do responsável (exigido pelo gateway)
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  guardianOf GuardianStudent[]
+  recharges  Recharge[]
+  sales      Sale[]            @relation("SaleOperator")
+  entries    LedgerEntry[]     @relation("EntryAuthor")
+  cashboxes  Cashbox[]
+}
+
+model Classroom {
+  id       String    @id @default(uuid())
+  name     String // ex.: "5º A"
+  grade    String
+  shift    String?
+  students Student[]
+}
+
+model Student {
+  id               String     @id @default(uuid())
+  name             String
+  enrollment       String     @unique // matrícula
+  classroomId      String?
+  classroom        Classroom? @relation(fields: [classroomId], references: [id])
+  photoUrl         String?
+  qrCode           String     @unique // impresso na carteirinha
+  nfcUid           String?    @unique
+  dailyLimitCents  Int? // null = sem limite
+  offlineLimitCents Int       @default(0) // teto de gasto quando o PDV está offline
+  active           Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+
+  wallet       Wallet?
+  guardians    GuardianStudent[]
+  restrictions Restriction[]
+  recharges    Recharge[]
+  sales        Sale[]
+}
+
+model GuardianStudent {
+  guardianId String
+  studentId  String
+  guardian   User    @relation(fields: [guardianId], references: [id])
+  student    Student @relation(fields: [studentId], references: [id])
+
+  @@id([guardianId, studentId])
+}
+
+model Wallet {
+  id           String        @id @default(uuid())
+  studentId    String        @unique
+  student      Student       @relation(fields: [studentId], references: [id])
+  balanceCents Int           @default(0)
+  updatedAt    DateTime      @updatedAt
+  entries      LedgerEntry[]
+}
+
+enum EntryType {
+  CREDIT // recarga paga
+  DEBIT // compra
+  REFUND // estorno de compra (volta para a carteira)
+  REVERSAL // recarga devolvida/chargeback (sai da carteira)
+  ADJUSTMENT // ajuste manual do admin (positivo ou negativo)
+}
+
+model LedgerEntry {
+  id          String    @id @default(uuid())
+  walletId    String
+  wallet      Wallet    @relation(fields: [walletId], references: [id])
+  type        EntryType
+  amountCents Int // positivo = entra, negativo = sai
+  originType  String // "recharge" | "sale" | "manual"
+  originId    String?
+  reason      String?
+  authorId    String?
+  author      User?     @relation("EntryAuthor", fields: [authorId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([walletId, createdAt])
+  // Um mesmo evento de origem só gera um lançamento do mesmo tipo
+  @@unique([originType, originId, type])
+}
+
+enum RechargeMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  WALLET_APP
+  CASH // lançada no balcão
+  POS // maquininha do balcão
+}
+
+enum RechargeStatus {
+  PENDING
+  PAID
+  CANCELED
+  REFUNDED
+}
+
+model Recharge {
+  id              String         @id @default(uuid())
+  // id enviado ao gateway (merchantChargeId no PicPay): 6-36 chars [a-zA-Z0-9-]
+  chargeId        String         @unique
+  studentId       String
+  student         Student        @relation(fields: [studentId], references: [id])
+  guardianId      String?
+  guardian        User?          @relation(fields: [guardianId], references: [id])
+  amountCents     Int
+  method          RechargeMethod
+  status          RechargeStatus @default(PENDING)
+  gateway         String? // "picpay", "stone"...
+  gatewayRef      String? // id da cobrança no gateway
+  pixQrCode       String? // copia e cola
+  pixQrCodeBase64 String?
+  expiresAt       DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+}
+
+enum SaleStatus {
+  COMPLETED
+  REFUNDED
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String        @unique
+  products     Product[]
+  restrictions Restriction[]
+}
+
+model Product {
+  id           String        @id @default(uuid())
+  name         String
+  categoryId   String?
+  category     Category?     @relation(fields: [categoryId], references: [id])
+  priceCents   Int
+  stock        Int           @default(0)
+  minStock     Int           @default(0)
+  active       Boolean       @default(true)
+  items        SaleItem[]
+  restrictions Restriction[]
+}
+
+// Bloqueio definido pelo responsável: por produto OU por categoria
+model Restriction {
+  id         String    @id @default(uuid())
+  studentId  String
+  student    Student   @relation(fields: [studentId], references: [id])
+  productId  String?
+  product    Product?  @relation(fields: [productId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime  @default(now())
+}
+
+model Sale {
+  id          String     @id @default(uuid())
+  studentId   String
+  student     Student    @relation(fields: [studentId], references: [id])
+  operatorId  String
+  operator    User       @relation("SaleOperator", fields: [operatorId], references: [id])
+  cashboxId   String?
+  cashbox     Cashbox?   @relation(fields: [cashboxId], references: [id])
+  totalCents  Int
+  status      SaleStatus @default(COMPLETED)
+  offlineUuid String?    @unique // evita duplicar vendas na sincronização offline
+  createdAt   DateTime   @default(now())
+  items       SaleItem[]
+}
+
+model SaleItem {
+  id             String  @id @default(uuid())
+  saleId         String
+  sale           Sale    @relation(fields: [saleId], references: [id])
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+  quantity       Int
+  unitPriceCents Int // preço no momento da venda
+}
+
+model Cashbox {
+  id             String    @id @default(uuid())
+  operatorId     String
+  operator       User      @relation(fields: [operatorId], references: [id])
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  openingCents   Int       @default(0)
+  closingCents   Int?
+  sales          Sale[]
+}
+
+// Registro bruto de cada notificação recebida (idempotência e auditoria)
+model WebhookEvent {
+  id          String    @id @default(uuid())
+  gateway     String
+  eventId     String
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  receivedAt  DateTime  @default(now())
+
+  @@unique([gateway, eventId])
+}
