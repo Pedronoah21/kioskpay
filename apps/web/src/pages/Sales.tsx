@@ -93,7 +93,10 @@ export default function Sales() {
             <tbody>
               {day.data.sales.map((s) => (
                 <tr key={s.id} className={s.status === 'REFUNDED' ? 'refunded' : ''}>
-                  <td>{time(s.createdAt)}</td>
+                  <td>
+                    {time(s.createdAt)}
+                    {s.orderNumber !== null && <span className="tag order-tag">Totem #{String(s.orderNumber).padStart(3, '0')}</span>}
+                  </td>
                   <td>
                     <Link to={`/alunos/${s.student.id}`}>{s.student.name}</Link>
                   </td>

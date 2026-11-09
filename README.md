@@ -77,6 +77,19 @@ npm install
 VITE_API_URL=http://localhost:3000 npm run dev
 ```
 
+## Totem de autoatendimento
+
+O mesmo painel vira totem quando entra com um usuário de perfil **Totem** (crie em Equipe › Novo usuário › Perfil: Totem).
+
+1. O aluno passa a carteirinha (leitor USB) ou mostra o QR para a câmera
+2. Digita a senha de 4 números (definida pelos pais no app ou pela escola na ficha do aluno)
+3. Escolhe os itens (bloqueios dos pais e limite diário já aplicados), confere e confirma
+4. Recebe o número do pedido; a cantina vê em **Pedidos do totem**, marca "Pronto" e depois "Entregue"
+
+Segurança: 5 senhas erradas bloqueiam a carteirinha no totem por 15 min; a sessão do aluno vale 5 min e só no totem que a criou; sem toque por 45 s o totem volta ao início; o perfil Totem não acessa cadastros. Para sair do modo totem: 5 toques rápidos no logo e a senha do usuário do totem (ali também liga a tela cheia).
+
+Dica de instalação: no tablet/PC do totem, abra o painel no Chrome em modo quiosque (`chrome --kiosk https://kioskpay-painel.onrender.com`) ou "Fixar app" no Android.
+
 ## App dos pais (`apps/mobile`)
 
 Expo SDK 58 com Expo Router. O mesmo código roda no Android, no iPhone e no navegador (portal web dos pais).

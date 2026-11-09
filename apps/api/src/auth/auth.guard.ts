@@ -30,6 +30,10 @@ export class AuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException('Sessão expirada, faça login novamente');
     }
+    // A sessão curta do aluno no totem não vale como login de usuário
+    if ((payload as { typ?: string }).typ === 'kiosk-student' || !payload.role) {
+      throw new UnauthorizedException('Faça login para continuar');
+    }
     const user: AuthUser = { id: payload.sub, role: payload.role, name: payload.name };
     req.user = user;
 

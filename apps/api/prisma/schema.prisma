@@ -17,6 +17,18 @@ enum Role {
   OPERATOR
   GUARDIAN
   STUDENT
+  KIOSK // aparelho do totem de autoatendimento
+}
+
+enum SaleChannel {
+  COUNTER // caixa operado pela cantina
+  KIOSK // totem de autoatendimento
+}
+
+enum OrderStatus {
+  PENDING // pago no totem, a preparar
+  READY // pronto, aguardando retirada
+  DELIVERED
 }
 
 model User {
@@ -57,6 +69,10 @@ model Student {
   dailyLimitCents  Int? // null = sem limite
   offlineLimitCents Int       @default(0) // teto de gasto quando o PDV está offline
   active           Boolean    @default(true)
+  // Senha de 4 dígitos para o totem (hash). Bloqueia por 15 min após 5 erros.
+  pinHash          String?
+  pinFailures      Int        @default(0)
+  pinLockedUntil   DateTime?
   createdAt        DateTime   @default(now())
 
   wallet       Wallet?
@@ -196,6 +212,15 @@ model Sale {
   offlineUuid String?    @unique // evita duplicar vendas na sincronização offline
   createdAt   DateTime   @default(now())
   items       SaleItem[]
+
+  channel     SaleChannel  @default(COUNTER)
+  orderNumber Int? // senha do pedido do totem, reinicia a cada dia
+  orderStatus OrderStatus?
+  readyAt     DateTime?
+  deliveredAt DateTime?
+
+  @@index([createdAt])
+  @@index([orderStatus])
 }
 
 model SaleItem {

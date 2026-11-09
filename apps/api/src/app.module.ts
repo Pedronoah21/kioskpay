@@ -15,6 +15,8 @@ import { RechargesService } from './recharges/recharges.service';
 import { SalesController } from './sales/sales.controller';
 import { SalesService } from './sales/sales.service';
 import { CatalogController } from './catalog/catalog.controller';
+import { KioskController, OrdersController, PinController } from './kiosk/kiosk.controller';
+import { KioskService } from './kiosk/kiosk.service';
 import { ControlsController } from './students/controls.controller';
 import { StudentsController } from './students/students.controller';
 import { StudentsService } from './students/students.service';
@@ -45,6 +47,9 @@ import { PaymentWebhookController } from './webhooks/payment-webhook.controller'
     RechargesController,
     SalesController,
     PaymentWebhookController,
+    KioskController,
+    OrdersController,
+    PinController,
   ],
   providers: [
     // Toda rota exige login, salvo as marcadas com @Public()
@@ -55,6 +60,7 @@ import { PaymentWebhookController } from './webhooks/payment-webhook.controller'
     WalletService,
     RechargesService,
     SalesService,
+    KioskService,
     PicPayGateway,
     {
       // Troque o provedor por variável de ambiente; novos adaptadores entram aqui

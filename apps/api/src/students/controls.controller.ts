@@ -38,6 +38,8 @@ export class ControlsController {
         id: true,
         name: true,
         dailyLimitCents: true,
+        pinHash: true,
+        pinLockedUntil: true,
         restrictions: { include: { product: true, category: true }, orderBy: { createdAt: 'asc' } },
       },
     });
@@ -46,6 +48,8 @@ export class ControlsController {
       studentId: student.id,
       name: student.name,
       dailyLimitCents: student.dailyLimitCents,
+      hasPin: !!student.pinHash,
+      pinLocked: !!student.pinLockedUntil && student.pinLockedUntil > new Date(),
       restrictions: student.restrictions.map((r) => ({
         id: r.id,
         type: r.productId ? 'product' : 'category',

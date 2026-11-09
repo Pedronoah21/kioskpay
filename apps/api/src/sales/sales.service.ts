@@ -9,6 +9,21 @@ export interface SaleRequest {
   cashboxId?: string;
   offlineUuid?: string;
   items: { productId: string; quantity: number }[];
+  /** KIOSK: pedido do totem, recebe número e entra na fila do balcão. */
+  channel?: 'COUNTER' | 'KIOSK';
+}
+
+/** Repete a transação quando o Postgres a cancela por conflito (duas vendas ao mesmo tempo). */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      if (code !== 'P2034' || i >= attempts) throw e;
+      await new Promise((r) => setTimeout(r, 30 * i));
+    }
+  }
 }
 
 /** Início do dia em America/Manaus (UTC-4, sem horário de verão). */
@@ -94,6 +109,9 @@ export class SalesService {
         createdAt: s.createdAt,
         status: s.status,
         totalCents: s.totalCents,
+        channel: s.channel,
+        orderNumber: s.orderNumber,
+        orderStatus: s.orderStatus,
         student: s.student,
         operator: s.operator.name,
         items: s.items.map((i) => ({
@@ -112,7 +130,7 @@ export class SalesService {
       if (existing) return existing;
     }
 
-    return this.prisma.$transaction(
+    return withRetry(() => this.prisma.$transaction(
       async (tx) => {
         const student = await tx.student.findUnique({
           where: { id: req.studentId },
@@ -156,6 +174,16 @@ export class SalesService {
           throw new BadRequestException({ code: verdict.reason.code, message: rejectionMessage(verdict.reason) });
         }
 
+        // Pedido do totem: número do dia (1 a 999) para chamar no balcão
+        let order: { channel: 'KIOSK'; orderNumber: number; orderStatus: 'PENDING' } | undefined;
+        if (req.channel === 'KIOSK') {
+          const last = await tx.sale.aggregate({
+            where: { channel: 'KIOSK', createdAt: { gte: startOfSchoolDay() } },
+            _max: { orderNumber: true },
+          });
+          order = { channel: 'KIOSK', orderNumber: ((last._max.orderNumber ?? 0) % 999) + 1, orderStatus: 'PENDING' };
+        }
+
         const sale = await tx.sale.create({
           data: {
             studentId: student.id,
@@ -163,6 +191,7 @@ export class SalesService {
             cashboxId: req.cashboxId,
             offlineUuid: req.offlineUuid,
             totalCents: verdict.totalCents,
+            ...order,
             items: {
               create: cart.map((c) => ({
                 productId: c.productId,
@@ -196,7 +225,7 @@ export class SalesService {
         return { ...sale, balanceAfterCents: wallet.balanceCents };
       },
       { isolationLevel: 'Serializable' },
-    );
+    ));
   }
 
   /** Estorno de venda (somente admin): devolve o valor e o estoque. */

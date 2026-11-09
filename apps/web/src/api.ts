@@ -56,7 +56,10 @@ function track(delta: number) {
   }
 }
 
-export async function request<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function request<T>(
+  path: string,
+  options: { method?: string; body?: unknown; headers?: Record<string, string> } = {},
+): Promise<T> {
   const token = getToken();
   track(1);
   let res: Response;
@@ -67,6 +70,7 @@ export async function request<T>(path: string, options: { method?: string; body?
         Accept: 'application/json',
         ...(options.body !== undefined && { 'Content-Type': 'application/json' }),
         ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
       },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
@@ -84,7 +88,8 @@ export async function request<T>(path: string, options: { method?: string; body?
     data = undefined;
   }
   if (!res.ok) {
-    if (res.status === 401 && token) onUnauthorized?.();
+    // Login com senha errada também responde 401, mas não é sessão expirada
+    if (res.status === 401 && token && path !== '/auth/login') onUnauthorized?.();
     if (res.status === 502 || res.status === 503) {
       throw new ApiError('O servidor está iniciando. Aguarde alguns segundos e tente de novo.', res.status);
     }
@@ -96,7 +101,7 @@ export async function request<T>(path: string, options: { method?: string; body?
 }
 
 // ---------- Tipos ----------
-export type Role = 'ADMIN' | 'OPERATOR' | 'GUARDIAN' | 'STUDENT';
+export type Role = 'ADMIN' | 'OPERATOR' | 'GUARDIAN' | 'STUDENT' | 'KIOSK';
 
 export interface Me {
   id: string;
@@ -124,6 +129,8 @@ export interface Student {
   nfcUid: string | null;
   dailyLimitCents: number | null;
   active: boolean;
+  hasPin: boolean;
+  pinLocked: boolean;
   wallet: { balanceCents: number } | null;
   guardians?: { id: string; name: string; email: string; phone: string | null }[];
 }
@@ -196,10 +203,25 @@ export interface DaySales {
     createdAt: string;
     status: 'COMPLETED' | 'REFUNDED';
     totalCents: number;
+    channel: 'COUNTER' | 'KIOSK';
+    orderNumber: number | null;
+    orderStatus: 'PENDING' | 'READY' | 'DELIVERED' | null;
     student: { id: string; name: string };
     operator: string;
     items: { name: string; quantity: number; unitPriceCents: number }[];
   }[];
+}
+
+export interface QueueOrder {
+  id: string;
+  orderNumber: number;
+  orderStatus: 'PENDING' | 'READY';
+  createdAt: string;
+  readyAt: string | null;
+  totalCents: number;
+  student: string;
+  classroom: string | null;
+  items: { name: string; quantity: number }[];
 }
 
 // ---------- Chamadas ----------
@@ -257,8 +279,28 @@ export const api = {
   salesOfDay: (date?: string) => request<DaySales>(`/sales${q({ date })}`),
   refundSale: (id: string, reason: string) => request(`/sales/${id}/refund`, { method: 'POST', body: { reason } }),
 
+  setPin: (id: string, pin: string) => request(`/students/${id}/controls/pin`, { method: 'PUT', body: { pin } }),
+  removePin: (id: string) => request(`/students/${id}/controls/pin`, { method: 'DELETE' }),
+
+  kioskCard: (code: string) =>
+    request<{ firstName: string; hasPin: boolean; lockedMinutes: number }>('/kiosk/card', {
+      method: 'POST',
+      body: { code },
+    }),
+  kioskLogin: (code: string, pin: string) =>
+    request<{ session: string; student: CheckoutStudent }>('/kiosk/login', { method: 'POST', body: { code, pin } }),
+  kioskOrder: (session: string, items: { productId: string; quantity: number }[], key: string) =>
+    request<{ orderNumber: number; totalCents: number; balanceAfterCents: number }>('/kiosk/order', {
+      method: 'POST',
+      body: { items, key },
+      headers: { 'X-Kiosk-Session': session },
+    }),
+  orders: () => request<QueueOrder[]>('/orders'),
+  setOrderStatus: (id: string, status: 'READY' | 'DELIVERED') =>
+    request(`/orders/${id}`, { method: 'PATCH', body: { status } }),
+
   staff: () => request<Staff[]>('/auth/staff'),
-  createStaff: (body: { name: string; email: string; password: string; role: 'ADMIN' | 'OPERATOR' }) =>
+  createStaff: (body: { name: string; email: string; password: string; role: 'ADMIN' | 'OPERATOR' | 'KIOSK' }) =>
     request<Staff>('/auth/staff', { method: 'POST', body }),
   setStaffActive: (id: string, active: boolean) =>
     request(`/auth/staff/${id}`, { method: 'PATCH', body: { active } }),

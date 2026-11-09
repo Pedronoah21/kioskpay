@@ -98,6 +98,15 @@ export default function ControlsScreen() {
         )}
       </Card>
 
+      <PinCard
+        hasPin={!!controls?.hasPin}
+        locked={!!controls?.pinLocked}
+        onSave={async (pin) => {
+          await api.setPin(token, id, pin);
+          await load();
+        }}
+      />
+
       {categories.length > 0 && (
         <Card>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Bloquear categorias</Text>
@@ -129,6 +138,74 @@ export default function ControlsScreen() {
         ))}
       </Card>
     </ScrollView>
+  );
+}
+
+/** Senha de 4 números que o aluno digita no totem de autoatendimento. */
+function PinCard({
+  hasPin,
+  locked,
+  onSave,
+}: {
+  hasPin: boolean;
+  locked: boolean;
+  onSave: (pin: string) => Promise<void>;
+}) {
+  const [pin, setPin] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const digits = (v: string) => v.replace(/\D/g, '').slice(0, 4);
+
+  async function save() {
+    setError(null);
+    setSaved(false);
+    if (pin.length !== 4) return setError('A senha precisa ter 4 números.');
+    if (pin !== confirm) return setError('As duas senhas não são iguais.');
+    setBusy(true);
+    try {
+      await onSave(pin);
+      setPin('');
+      setConfirm('');
+      setSaved(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Senha do totem</Text>
+      <Muted>
+        {locked
+          ? 'Bloqueada por tentativas erradas. Libera sozinha em até 15 minutos, ou crie uma nova abaixo.'
+          : hasPin
+            ? 'Seu filho já tem senha para comprar no totem da cantina. Você pode trocar quando quiser.'
+            : 'Crie uma senha de 4 números para seu filho comprar sozinho no totem da cantina.'}
+      </Muted>
+      <Field
+        label={hasPin ? 'Nova senha' : 'Senha'}
+        value={pin}
+        onChangeText={(v) => setPin(digits(v))}
+        keyboardType="number-pad"
+        secureTextEntry
+        maxLength={4}
+      />
+      <Field
+        label="Repita a senha"
+        value={confirm}
+        onChangeText={(v) => setConfirm(digits(v))}
+        keyboardType="number-pad"
+        secureTextEntry
+        maxLength={4}
+      />
+      {!!error && <Text style={{ color: colors.danger }}>{error}</Text>}
+      {saved && <Text style={{ color: colors.credit }}>Senha salva. Combine com seu filho.</Text>}
+      <Button title={hasPin ? 'Trocar senha' : 'Criar senha'} onPress={save} loading={busy} />
+    </Card>
   );
 }
 

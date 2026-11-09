@@ -111,6 +111,7 @@ export default function StudentDetail() {
               </button>
             )}
           </div>
+          <TotemPin student={s} admin={admin} onChange={(msg) => (setNotice(msg), student.reload())} />
         </section>
       </div>
 
@@ -167,6 +168,59 @@ export default function StudentDetail() {
         />
       )}
     </>
+  );
+}
+
+function TotemPin({ student, admin, onChange }: { student: Student; admin: boolean; onChange: (msg: string) => void }) {
+  const [pin, setPin] = useState('');
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await api.setPin(student.id, pin);
+      setPin('');
+      setOpen(false);
+      onChange('Senha do totem definida. Informe ao aluno.');
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  const status = student.pinLocked
+    ? 'bloqueada por tentativas erradas (libera sozinha em até 15 min, ou defina uma nova)'
+    : student.hasPin
+      ? 'definida'
+      : 'não definida — o aluno ainda não consegue comprar no totem';
+
+  return (
+    <div className="pin-box no-print">
+      <h3>Senha do totem</h3>
+      <p className="muted small">Situação: {status}. Os pais também podem criar ou trocar pelo app.</p>
+      {admin &&
+        (open ? (
+          <form className="inline-fields" onSubmit={save}>
+            <input
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              inputMode="numeric"
+              placeholder="4 números"
+              aria-label="Nova senha do totem"
+              autoFocus
+            />
+            <button className="btn btn-primary" disabled={pin.length !== 4}>
+              Salvar senha
+            </button>
+          </form>
+        ) : (
+          <button className="btn btn-ghost" onClick={() => setOpen(true)}>
+            {student.hasPin ? 'Definir nova senha' : 'Criar senha'}
+          </button>
+        ))}
+      <Alert>{error}</Alert>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, getToken, setToken, setUnauthorizedHandler, type Me } from './api';
+import { api, getToken, setToken, setUnauthorizedHandler, type ApiError, type Me } from './api';
 
 type AuthValue = {
   user: Me | null;
@@ -28,16 +28,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(signOut);
     if (!getToken()) return;
-    api
-      .me()
-      .then(setUser)
-      .catch(() => signOut())
-      .finally(() => setLoading(false));
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    // Só desloga se o login for recusado (401). Sem internet ou servidor acordando: tenta de novo.
+    // Importante para o totem, que precisa voltar sozinho depois de reiniciar.
+    const load = () =>
+      api
+        .me()
+        .then((u) => {
+          if (!alive) return;
+          setUser(u);
+          setLoading(false);
+        })
+        .catch((e: ApiError) => {
+          if (!alive) return;
+          if (e.status === 401) {
+            signOut();
+            setLoading(false);
+          } else timer = setTimeout(load, 5000);
+        });
+    load();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
   }, [signOut]);
 
   const signIn = async (email: string, password: string) => {
     const { accessToken, user: u } = await api.login(email, password);
-    if (u.role !== 'ADMIN' && u.role !== 'OPERATOR') {
+    if (u.role !== 'ADMIN' && u.role !== 'OPERATOR' && u.role !== 'KIOSK') {
       throw new Error('Este painel é para a equipe da escola. Responsáveis usam o app KioskPay no celular.');
     }
     setToken(accessToken);

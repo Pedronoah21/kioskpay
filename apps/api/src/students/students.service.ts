@@ -15,6 +15,12 @@ export interface StudentInput {
   active?: boolean;
 }
 
+/** Remove o hash da senha do totem e informa só se existe. */
+function publicStudent<T extends { pinHash?: string | null; pinFailures?: number; pinLockedUntil?: Date | null }>(s: T) {
+  const { pinHash, pinFailures: _f, pinLockedUntil, ...rest } = s;
+  return { ...rest, hasPin: !!pinHash, pinLocked: !!pinLockedUntil && pinLockedUntil > new Date() };
+}
+
 @Injectable()
 export class StudentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -39,7 +45,7 @@ export class StudentsService {
         take: Math.min(params.take ?? 50, 200),
       }),
       this.prisma.student.count({ where }),
-    ]).then(([items, total]) => ({ total, items }));
+    ]).then(([items, total]) => ({ total, items: items.map(publicStudent) }));
   }
 
   async get(id: string) {
@@ -52,7 +58,7 @@ export class StudentsService {
       },
     });
     if (!s) throw new NotFoundException('Aluno não encontrado');
-    return { ...s, guardians: s.guardians.map((g) => g.guardian) };
+    return publicStudent({ ...s, guardians: s.guardians.map((g) => g.guardian) });
   }
 
   private async uniqueCode(tx: Prisma.TransactionClient = this.prisma) {
@@ -65,10 +71,10 @@ export class StudentsService {
 
   async create(input: StudentInput) {
     try {
-      return await this.prisma.student.create({
+      return publicStudent(await this.prisma.student.create({
         data: { ...input, qrCode: await this.uniqueCode(), wallet: { create: {} } },
         include: { classroom: true, wallet: true },
-      });
+      }));
     } catch (e) {
       throw this.friendly(e);
     }
@@ -76,7 +82,7 @@ export class StudentsService {
 
   async update(id: string, input: Partial<StudentInput>) {
     try {
-      return await this.prisma.student.update({ where: { id }, data: input, include: { classroom: true } });
+      return publicStudent(await this.prisma.student.update({ where: { id }, data: input, include: { classroom: true } }));
     } catch (e) {
       throw this.friendly(e);
     }

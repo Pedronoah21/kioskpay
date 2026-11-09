@@ -4,7 +4,9 @@ import { HashRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth';
 import Account from './pages/Account';
 import Checkout from './pages/Checkout';
+import Orders from './pages/Orders';
 import Sales from './pages/Sales';
+import Totem from './pages/Totem';
 import Classrooms from './pages/Classrooms';
 import ImportStudents from './pages/ImportStudents';
 import Login from './pages/Login';
@@ -27,6 +29,7 @@ function Shell({ children }: { children: ReactNode }) {
         </div>
         <nav>
           <NavLink to="/caixa">Caixa</NavLink>
+          <NavLink to="/pedidos">Pedidos do totem</NavLink>
           <NavLink to="/vendas">Vendas do dia</NavLink>
           <NavLink to="/alunos">Alunos</NavLink>
           {admin && <NavLink to="/importar">Importar planilha</NavLink>}
@@ -59,12 +62,15 @@ function App() {
       </div>
     );
   if (!user) return <Login />;
+  // Aparelho do totem: só a tela de autoatendimento, sem menu
+  if (user.role === 'KIOSK') return <Totem />;
 
   const admin = user.role === 'ADMIN';
   return (
     <Shell>
       <Routes>
         <Route path="/caixa" element={<Checkout />} />
+        <Route path="/pedidos" element={<Orders />} />
         <Route path="/vendas" element={<Sales />} />
         <Route path="/alunos" element={<Students />} />
         <Route path="/alunos/:id" element={<StudentDetail />} />

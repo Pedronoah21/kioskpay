@@ -4,6 +4,9 @@ import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Perfis criados pela escola (não se cadastram sozinhos). */
+const STAFF_ROLES: Role[] = ['ADMIN', 'OPERATOR', 'KIOSK'];
+
 /** Valida CPF pelos dígitos verificadores. */
 export function isValidCpf(raw: string): boolean {
   const cpf = raw.replace(/\D/g, '');
@@ -65,8 +68,8 @@ export class AuthService {
 
   /** Admin cria operadores e outros admins. */
   async createStaff(input: { name: string; email: string; password: string; role: Role }) {
-    if (input.role !== 'ADMIN' && input.role !== 'OPERATOR') {
-      throw new BadRequestException('Perfil deve ser ADMIN ou OPERATOR');
+    if (!STAFF_ROLES.includes(input.role)) {
+      throw new BadRequestException('Perfil deve ser ADMIN, OPERATOR ou KIOSK');
     }
     const email = input.email.trim().toLowerCase();
     if (await this.prisma.user.findUnique({ where: { email } })) {
@@ -85,7 +88,7 @@ export class AuthService {
 
   listStaff() {
     return this.prisma.user.findMany({
-      where: { role: { in: ['ADMIN', 'OPERATOR'] } },
+      where: { role: { in: STAFF_ROLES } },
       select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
       orderBy: { name: 'asc' },
     });
@@ -94,7 +97,7 @@ export class AuthService {
   async setStaffActive(currentId: string, id: string, active: boolean) {
     if (currentId === id && !active) throw new BadRequestException('Você não pode desativar o próprio acesso');
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'OPERATOR')) {
+    if (!user || !STAFF_ROLES.includes(user.role)) {
       throw new BadRequestException('Usuário da equipe não encontrado');
     }
     return this.prisma.user.update({

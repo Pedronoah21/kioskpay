@@ -3,6 +3,12 @@ import { api, type Staff as StaffUser } from '../api';
 import { useAuth } from '../auth';
 import { Alert, Field, Modal, PageHeader, Spinner, useLoad } from '../ui';
 
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: 'Administrador',
+  OPERATOR: 'Operador de caixa',
+  KIOSK: 'Totem',
+};
+
 export default function Staff() {
   const { user } = useAuth();
   const list = useLoad(() => api.staff(), []);
@@ -23,7 +29,7 @@ export default function Staff() {
     <>
       <PageHeader
         title="Equipe"
-        subtitle="Quem pode entrar no painel. Operadores de caixa vendem e lançam recargas; administradores fazem tudo."
+        subtitle="Quem pode entrar no painel. Operadores de caixa vendem e lançam recargas; administradores fazem tudo. Para o totem, crie um usuário com perfil Totem e entre com ele no aparelho."
         actions={
           <button className="btn btn-primary" onClick={() => setCreating(true)}>
             Novo usuário
@@ -53,7 +59,7 @@ export default function Staff() {
                     {s.id === user?.id && <span className="muted"> (você)</span>}
                   </td>
                   <td>{s.email}</td>
-                  <td>{s.role === 'ADMIN' ? 'Administrador' : 'Operador de caixa'}</td>
+                  <td>{ROLE_LABEL[s.role] ?? s.role}</td>
                   <td>{s.active ? <span className="tag tag-ok">Liberado</span> : <span className="tag">Bloqueado</span>}</td>
                   <td className="num">
                     {s.id !== user?.id && (
@@ -82,7 +88,7 @@ export default function Staff() {
 }
 
 function NewStaff({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'OPERATOR' as 'ADMIN' | 'OPERATOR' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'OPERATOR' as 'ADMIN' | 'OPERATOR' | 'KIOSK' });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -124,9 +130,10 @@ function NewStaff({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
           />
         </Field>
         <Field label="Perfil">
-          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'ADMIN' | 'OPERATOR' })}>
+          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'ADMIN' | 'OPERATOR' | 'KIOSK' })}>
             <option value="OPERATOR">Operador de caixa</option>
             <option value="ADMIN">Administrador</option>
+            <option value="KIOSK">Totem de autoatendimento</option>
           </select>
         </Field>
         <Alert>{error}</Alert>

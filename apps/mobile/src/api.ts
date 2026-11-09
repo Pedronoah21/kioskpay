@@ -63,6 +63,8 @@ export interface Controls {
   studentId: string;
   name: string;
   dailyLimitCents: number | null;
+  hasPin: boolean;
+  pinLocked: boolean;
   restrictions: { id: string; type: 'product' | 'category'; targetId: string; name: string }[];
 }
 
@@ -132,6 +134,9 @@ export const api = {
 
   unblock: (token: string, studentId: string, restrictionId: string) =>
     request(`/students/${studentId}/controls/restrictions/${restrictionId}`, { method: 'DELETE', token }),
+
+  setPin: (token: string, studentId: string, pin: string) =>
+    request(`/students/${studentId}/controls/pin`, { method: 'PUT', token, body: { pin } }),
 
   products: (token: string) => request<Product[]>('/products', { token }),
   categories: (token: string) => request<Category[]>('/categories', { token }),
