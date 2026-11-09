@@ -83,6 +83,27 @@ export class AuthService {
     return this.publicUser(user);
   }
 
+  listStaff() {
+    return this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'OPERATOR'] } },
+      select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async setStaffActive(currentId: string, id: string, active: boolean) {
+    if (currentId === id && !active) throw new BadRequestException('Você não pode desativar o próprio acesso');
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'OPERATOR')) {
+      throw new BadRequestException('Usuário da equipe não encontrado');
+    }
+    return this.prisma.user.update({
+      where: { id },
+      data: { active },
+      select: { id: true, name: true, active: true },
+    });
+  }
+
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     // Mesma mensagem para e-mail inexistente ou senha errada
@@ -95,7 +116,7 @@ export class AuthService {
   async changePassword(userId: string, current: string, next: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (!(await bcrypt.compare(current, user.passwordHash))) {
-      throw new UnauthorizedException('Senha atual incorreta');
+      throw new BadRequestException('Senha atual incorreta');
     }
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(next, 10) } });
     return { ok: true };

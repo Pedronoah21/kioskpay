@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { CurrentUser, Public, Roles, type AuthUser } from './auth.decorators';
 import { AuthService } from './auth.service';
 
@@ -30,6 +30,11 @@ class RegisterDto {
   @IsOptional()
   @IsString()
   phone?: string;
+}
+
+class StaffActiveDto {
+  @IsBoolean()
+  active: boolean;
 }
 
 class ChangePasswordDto {
@@ -83,6 +88,18 @@ export class AuthController {
   @HttpCode(200)
   changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
     return this.auth.changePassword(user.id, dto.currentPassword, dto.newPassword);
+  }
+
+  @Roles('ADMIN')
+  @Get('staff')
+  listStaff() {
+    return this.auth.listStaff();
+  }
+
+  @Roles('ADMIN')
+  @Patch('staff/:id')
+  setStaffActive(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: StaffActiveDto) {
+    return this.auth.setStaffActive(user.id, id, dto.active);
   }
 
   @Roles('ADMIN')

@@ -8,7 +8,7 @@ Cantina escolar pré-paga para uma escola: os responsáveis recarregam saldo por
 apps/
   api/        API em NestJS + Prisma + PostgreSQL  (pronta: carteira, recargas, vendas, webhook)
   mobile/     App dos pais em Expo (Android, iPhone e navegador)
-  web/        (próximo) PDV da cantina e painel admin
+  web/        Painel da escola (administração e caixa) em React + Vite
 ```
 
 ## Regras centrais
@@ -59,6 +59,21 @@ npm run prisma:seed
 - Variáveis de ambiente ficam no painel do Render (nunca no repositório).
 
 > O plano gratuito do Render "dorme" após ~15 min sem uso e leva cerca de 1 minuto para acordar. Para uso real (e para o webhook do PicPay não esperar), use o plano Starter.
+
+## Painel da escola (`apps/web`)
+
+Acesso pelo navegador com login de administrador ou operador de caixa.
+
+- **Alunos:** busca, filtro por turma, cadastro, edição, desativação, carteirinha com QR code para imprimir, novo código para carteirinha perdida, vínculo de responsáveis, recarga no balcão e extrato
+- **Importar planilha:** CSV do Excel (UTF-8 ou o padrão do Windows), com prévia e lista de linhas com problema
+- **Turmas, Produtos/Categorias/Estoque, Equipe** (operadores e administradores) e **Minha conta** (trocar senha)
+- Operador de caixa vê só Alunos, Produtos (estoque) e Minha conta
+
+```bash
+cd apps/web
+npm install
+VITE_API_URL=http://localhost:3000 npm run dev
+```
 
 ## App dos pais (`apps/mobile`)
 
