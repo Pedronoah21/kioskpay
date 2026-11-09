@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { ArrayMinSize, IsInt, IsOptional, IsString, IsUUID, Min, MinLength, ValidateNested } from 'class-validator';
 import { CurrentUser, Roles, type AuthUser } from '../auth/auth.decorators';
@@ -45,6 +45,19 @@ export class SalesController {
   @Get('identify/:code')
   identify(@Param('code') code: string) {
     return this.sales.identify(code);
+  }
+
+  /** Mesmo retorno do identify, a partir do id (aluno achado pela busca por nome). */
+  @Roles('ADMIN', 'OPERATOR')
+  @Get('checkout/:studentId')
+  checkout(@Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.sales.checkoutContext(studentId);
+  }
+
+  @Roles('ADMIN', 'OPERATOR')
+  @Get()
+  listDay(@Query('date') date?: string) {
+    return this.sales.listDay(date);
   }
 
   @Roles('ADMIN', 'OPERATOR')

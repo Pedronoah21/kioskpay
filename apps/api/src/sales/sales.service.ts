@@ -26,20 +26,82 @@ export class SalesService {
     private readonly wallet: WalletService,
   ) {}
 
-  /** Identifica o aluno no caixa pelo QR code ou NFC. */
-  async identify(code: string) {
+  /** Identifica o aluno no caixa pelo QR code ou NFC (leitores às vezes mudam maiúsculas). */
+  async identify(raw: string) {
+    const code = raw.trim();
     const student = await this.prisma.student.findFirst({
-      where: { OR: [{ qrCode: code }, { nfcUid: code }] },
-      include: { wallet: true, classroom: true },
+      where: { OR: [{ qrCode: code }, { qrCode: code.toUpperCase() }, { nfcUid: code }] },
+      select: { id: true },
+    });
+    if (!student) throw new NotFoundException('Carteirinha não encontrada. Confira o código ou busque pelo nome.');
+    return this.checkoutContext(student.id);
+  }
+
+  /**
+   * Tudo que o caixa precisa para montar a venda: saldo, limite do dia,
+   * quanto já gastou hoje e o que os pais bloquearam.
+   * A validação definitiva continua no create().
+   */
+  async checkoutContext(studentId: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+      include: { wallet: true, classroom: true, restrictions: true },
     });
     if (!student) throw new NotFoundException('Aluno não encontrado');
+    const spent = await this.prisma.sale.aggregate({
+      where: { studentId, status: 'COMPLETED', createdAt: { gte: startOfSchoolDay() } },
+      _sum: { totalCents: true },
+    });
     return {
       id: student.id,
       name: student.name,
+      enrollment: student.enrollment,
       photoUrl: student.photoUrl,
-      classroom: student.classroom?.name,
+      classroom: student.classroom?.name ?? null,
       balanceCents: student.wallet?.balanceCents ?? 0,
       active: student.active,
+      dailyLimitCents: student.dailyLimitCents,
+      spentTodayCents: spent._sum.totalCents ?? 0,
+      blockedProductIds: student.restrictions.flatMap((r) => (r.productId ? [r.productId] : [])),
+      blockedCategoryIds: student.restrictions.flatMap((r) => (r.categoryId ? [r.categoryId] : [])),
+    };
+  }
+
+  /** Vendas de um dia (padrão: hoje no horário de Manaus), mais recentes primeiro. */
+  async listDay(date?: string) {
+    let start = startOfSchoolDay();
+    if (date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Data inválida (use AAAA-MM-DD)');
+      start = new Date(`${date}T04:00:00.000Z`); // 00:00 em Manaus
+    }
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const sales = await this.prisma.sale.findMany({
+      where: { createdAt: { gte: start, lt: end } },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        student: { select: { id: true, name: true } },
+        operator: { select: { name: true } },
+        items: { include: { product: { select: { name: true } } } },
+      },
+    });
+    const completed = sales.filter((s) => s.status === 'COMPLETED');
+    return {
+      date: start.toISOString(),
+      count: completed.length,
+      totalCents: completed.reduce((sum, s) => sum + s.totalCents, 0),
+      sales: sales.map((s) => ({
+        id: s.id,
+        createdAt: s.createdAt,
+        status: s.status,
+        totalCents: s.totalCents,
+        student: s.student,
+        operator: s.operator.name,
+        items: s.items.map((i) => ({
+          name: i.product.name,
+          quantity: i.quantity,
+          unitPriceCents: i.unitPriceCents,
+        })),
+      })),
     };
   }
 

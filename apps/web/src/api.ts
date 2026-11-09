@@ -167,6 +167,41 @@ export interface ImportResult {
   errors: { line: number; message: string }[];
 }
 
+export interface CheckoutStudent {
+  id: string;
+  name: string;
+  enrollment: string;
+  photoUrl: string | null;
+  classroom: string | null;
+  balanceCents: number;
+  active: boolean;
+  dailyLimitCents: number | null;
+  spentTodayCents: number;
+  blockedProductIds: string[];
+  blockedCategoryIds: string[];
+}
+
+export interface SaleResult {
+  id: string;
+  totalCents: number;
+  balanceAfterCents: number;
+}
+
+export interface DaySales {
+  date: string;
+  count: number;
+  totalCents: number;
+  sales: {
+    id: string;
+    createdAt: string;
+    status: 'COMPLETED' | 'REFUNDED';
+    totalCents: number;
+    student: { id: string; name: string };
+    operator: string;
+    items: { name: string; quantity: number; unitPriceCents: number }[];
+  }[];
+}
+
 // ---------- Chamadas ----------
 const q = (params: Record<string, string | number | undefined>) => {
   const s = new URLSearchParams();
@@ -214,6 +249,13 @@ export const api = {
   adjustStock: (id: string, delta: number) =>
     request<{ stock: number }>(`/products/${id}/stock`, { method: 'POST', body: { delta } }),
   deactivateProduct: (id: string) => request(`/products/${id}`, { method: 'DELETE' }),
+
+  identify: (code: string) => request<CheckoutStudent>(`/sales/identify/${encodeURIComponent(code)}`),
+  checkout: (studentId: string) => request<CheckoutStudent>(`/sales/checkout/${studentId}`),
+  sell: (body: { studentId: string; items: { productId: string; quantity: number }[]; offlineUuid: string }) =>
+    request<SaleResult>('/sales', { method: 'POST', body }),
+  salesOfDay: (date?: string) => request<DaySales>(`/sales${q({ date })}`),
+  refundSale: (id: string, reason: string) => request(`/sales/${id}/refund`, { method: 'POST', body: { reason } }),
 
   staff: () => request<Staff[]>('/auth/staff'),
   createStaff: (body: { name: string; email: string; password: string; role: 'ADMIN' | 'OPERATOR' }) =>

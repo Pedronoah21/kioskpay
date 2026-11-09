@@ -67,7 +67,9 @@ Acesso pelo navegador com login de administrador ou operador de caixa.
 - **Alunos:** busca, filtro por turma, cadastro, edição, desativação, carteirinha com QR code para imprimir, novo código para carteirinha perdida, vínculo de responsáveis, recarga no balcão e extrato
 - **Importar planilha:** CSV do Excel (UTF-8 ou o padrão do Windows), com prévia e lista de linhas com problema
 - **Turmas, Produtos/Categorias/Estoque, Equipe** (operadores e administradores) e **Minha conta** (trocar senha)
-- Operador de caixa vê só Alunos, Produtos (estoque) e Minha conta
+- **Caixa:** identifica o aluno por leitor USB (código + Enter), câmera (QR da carteirinha) ou nome; mostra saldo, quanto pode gastar hoje e os itens bloqueados pelos pais; carrinho com quantidades; F2 finaliza, Esc troca de aluno, Enter chama o próximo. Cliques repetidos não duplicam a venda.
+- **Vendas do dia:** total, quantidade, ticket médio, itens por venda; estorno (só administrador) devolve saldo e estoque
+- Operador de caixa vê Caixa, Vendas do dia, Alunos, Produtos (estoque) e Minha conta, e entra direto no Caixa
 
 ```bash
 cd apps/web

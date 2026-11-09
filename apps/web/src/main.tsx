@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth';
 import Account from './pages/Account';
+import Checkout from './pages/Checkout';
+import Sales from './pages/Sales';
 import Classrooms from './pages/Classrooms';
 import ImportStudents from './pages/ImportStudents';
 import Login from './pages/Login';
@@ -24,6 +26,8 @@ function Shell({ children }: { children: ReactNode }) {
           <span>KioskPay</span>
         </div>
         <nav>
+          <NavLink to="/caixa">Caixa</NavLink>
+          <NavLink to="/vendas">Vendas do dia</NavLink>
           <NavLink to="/alunos">Alunos</NavLink>
           {admin && <NavLink to="/importar">Importar planilha</NavLink>}
           {admin && <NavLink to="/turmas">Turmas</NavLink>}
@@ -60,6 +64,8 @@ function App() {
   return (
     <Shell>
       <Routes>
+        <Route path="/caixa" element={<Checkout />} />
+        <Route path="/vendas" element={<Sales />} />
         <Route path="/alunos" element={<Students />} />
         <Route path="/alunos/:id" element={<StudentDetail />} />
         <Route path="/produtos" element={<Products />} />
@@ -67,7 +73,7 @@ function App() {
         {admin && <Route path="/importar" element={<ImportStudents />} />}
         {admin && <Route path="/turmas" element={<Classrooms />} />}
         {admin && <Route path="/equipe" element={<Staff />} />}
-        <Route path="*" element={<Navigate to="/alunos" replace />} />
+        <Route path="*" element={<Navigate to={admin ? '/alunos' : '/caixa'} replace />} />
       </Routes>
     </Shell>
   );
