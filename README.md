@@ -92,22 +92,32 @@ Dica de instalação: no tablet/PC do totem, abra o painel no Chrome em modo qui
 
 ## App dos pais (`apps/mobile`)
 
-Expo SDK 58 com Expo Router. O mesmo código roda no Android, no iPhone e no navegador (portal web dos pais).
+Expo SDK 58 com Expo Router. O mesmo código gera o app Android/iPhone e a versão web instalável.
 
-Telas: login, cadastro (com máscara de CPF), lista de filhos com saldo, extrato, recarga por Pix (QR code, copia e cola e confirmação automática quando o pagamento cai) e limite diário/bloqueios.
+Telas: login, cadastro (máscara de CPF), filhos com saldo, extrato, recarga por Pix (QR, copia e cola, confirmação automática), limite diário, bloqueios e senha do totem.
+
+**Versão web (no ar):** https://kioskpay-app.onrender.com — no celular, abrir e tocar em "Adicionar à tela inicial" (Android: menu ⋮ › Instalar app; iPhone/Safari: Compartilhar › Adicionar à Tela de Início).
 
 ```bash
 cd apps/mobile
 npm install
 cp .env.example .env        # EXPO_PUBLIC_API_URL = endereço da API
-npx expo start              # abra no Expo Go pelo QR code, ou tecle "w" para o navegador
+npx expo start              # Expo Go pelo QR code, ou "w" para o navegador
+npm run build:web           # gera dist/ instalável (manifesto, ícones, 404.html)
 ```
 
-Para testar no celular com a API rodando no computador, use o IP do computador na rede (ex.: `http://192.168.0.10:3000`), não `localhost`.
+**Instalador Android e lojas (EAS):** precisa de conta Expo (grátis). Google Play: conta de desenvolvedor (taxa única). App Store: Apple Developer Program (anuidade).
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest init                                  # vincula o projeto à sua conta
+npx eas-cli@latest build -p android --profile preview    # APK para instalar direto nos celulares
+npx eas-cli@latest build -p android --profile production # AAB para a Play Store
+npx eas-cli@latest build -p ios --profile production     # para a App Store
+npx eas-cli@latest submit -p android                      # envia para a loja
+```
 
 Checagens: `npx tsc --noEmit` e `npx eslint .`
-
-Publicação nas lojas: `npx eas-cli@latest build` (gera os instaladores na nuvem) e `npx eas-cli@latest submit`.
 
 ## Login e perfis
 

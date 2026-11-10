@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSession } from '@/ctx';
 import { Button, colors, ErrorBox, Field, Muted } from '@/ui';
@@ -31,6 +31,7 @@ export default function SignIn() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24, gap: 16 }}>
           <View style={{ gap: 4, marginBottom: 16 }}>
+            <Image source={require('../../assets/logo.png')} style={{ width: 64, height: 64, marginBottom: 12 }} />
             <Text style={{ fontSize: 32, fontWeight: '800', color: colors.primary }}>KioskPay</Text>
             <Muted>Saldo e consumo da cantina do seu filho.</Muted>
           </View>

@@ -8,28 +8,49 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "br.com.kioskpay.app"
+      "bundleIdentifier": "br.com.kioskpay.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#0F766E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "br.com.kioskpay.app"
+      "package": "br.com.kioskpay.app",
+      "versionCode": 1,
+      "permissions": []
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "KioskPay",
+      "shortName": "KioskPay",
+      "themeColor": "#0F766E",
+      "backgroundColor": "#F6F7F9",
+      "output": "single"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-router"
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#F6F7F9"
+        }
+      ]
     ],
     "scheme": "kioskpay",
     "extra": {
       "apiUrl": "https://kioskpay-api.onrender.com"
-    }
+    },
+    "description": "Saldo, recargas por Pix e controle da cantina escolar."
   }
 }
