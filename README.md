@@ -96,7 +96,7 @@ Expo SDK 58 com Expo Router. O mesmo código gera o app Android/iPhone e a vers�
 
 Telas: login, cadastro (máscara de CPF), filhos com saldo, extrato, recarga por Pix (QR, copia e cola, confirmação automática), limite diário, bloqueios e senha do totem.
 
-**Versão web (no ar):** https://kioskpay-app.onrender.com — no celular, abrir e tocar em "Adicionar à tela inicial" (Android: menu ⋮ › Instalar app; iPhone/Safari: Compartilhar › Adicionar à Tela de Início).
+**Versão web (no ar):** https://www.cedcci.com.br/kioskpay (também em https://kioskpay-app.onrender.com/kioskpay) — no celular, abrir e tocar em "Adicionar à tela inicial" (Android: menu ⋮ › Instalar app; iPhone/Safari: Compartilhar › Adicionar à Tela de Início).
 
 ```bash
 cd apps/mobile
@@ -104,6 +104,7 @@ npm install
 cp .env.example .env        # EXPO_PUBLIC_API_URL = endereço da API
 npx expo start              # Expo Go pelo QR code, ou "w" para o navegador
 npm run build:web           # gera dist/ instalável (manifesto, ícones, 404.html)
+EXPO_BASE_URL=/kioskpay npm run build:web   # versão que mora na pasta /kioskpay
 ```
 
 **Instalador Android e lojas (EAS):** precisa de conta Expo (grátis). Google Play: conta de desenvolvedor (taxa única). App Store: Apple Developer Program (anuidade).
